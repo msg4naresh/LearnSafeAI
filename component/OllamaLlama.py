@@ -13,7 +13,7 @@ class OllamaLlama:
     def chat(self, prompt):
         url = f"{self.base_url}/v1/chat/completions"
         data = {
-            "model": "mistral",
+            "model": "llama3.1:latest",
             "messages": [{"role": "user", "content": prompt}]
         }
         response = self.client.post(url, json=data, timeout=60.0)  # Specify timeout here as well
