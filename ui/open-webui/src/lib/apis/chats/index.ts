@@ -764,7 +764,7 @@ export const archiveAllChats = async (token: string) => {
 export const getMeaning = async (word: string) => {
     let error = null;
 
-    const res = await fetch(`http://localhost:5000/meaning?word=${word}`, {
+    const res = await fetch(`http://localhost:5000/meaning?flag=static`, {
         method: 'GET',
         headers: {
             Accept: 'application/json',
