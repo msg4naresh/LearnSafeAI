@@ -5,6 +5,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from sklearn.cluster import AgglomerativeClustering
 from sentence_transformers import SentenceTransformer
 import json
+from questions_extractor import extract_user_questions
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -116,13 +117,45 @@ def main(questions: List[str]) -> None:
         print(f"\nError: An error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    questions = [
-        "How do I install Python?",
-        "What's the difference between Python 2 and 3?",
-        "How much does your service cost?",
-        "Can you explain object-oriented programming?",
-        "What's your refund policy?",
-        "How do I create a virtual environment in Python?",
+    json_file = 'component/data/conversations.json'
+    questions = extract_user_questions(json_file)
+
+    # Add some sample hard-coded questions with similar themes
+    sample_questions = [
+        "How do I declare a variable in Python?",
+        "What is Docker and why is it useful?",
+        "How do I initialize a Git repository?",
+        "What's the difference between single and double quotes in Python strings?",
+        "How do I create a Dockerfile?",
+        "What's the difference between git add and git commit?",
+        "How do I use f-strings in Python?",
+        "What's the difference between a Docker image and a container?",
+        "How do I create a new branch in Git?",
+        "What are the basic data types in Python?",
+        "How do I build a Docker image?",
+        "What is Git merge and how do I use it?",
+        "How do I create a list in Python?",
+        "How do I run a Docker container?",
+        "How do I resolve merge conflicts in Git?",
+        "What's the difference between a list and a tuple in Python?",
+        "What is Docker Compose and how do I use it?",
+        "What is Git rebase and when should I use it?",
+        "How do I add an item to a list in Python?",
+        "How do I share my Docker images with others?",
+        "How do I undo the last commit in Git?",
+        "How do I create a dictionary in Python?",
+        "How do I access values in a dictionary?",
+        "How do I define a function in Python?",
+        "What's the difference between arguments and parameters in Python functions?",
+        "How do I use *args and **kwargs in Python functions?",
+        "What is a lambda function in Python?",
+        "How do I open a file in Python?",
+        "What's the difference between 'r', 'w', and 'a' modes when opening a file?",
+        "How do I read data from a CSV file in Python?",
+        "How do I write data to a JSON file in Python?"
     ]
-    
-    main(questions)
+
+    # Combine extracted questions with sample questions
+    all_questions = sample_questions
+
+    main(all_questions)
