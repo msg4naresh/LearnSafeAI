@@ -1,0 +1,3 @@
+(hack) C:\Development\hackpipeline\pipelines>start.bat
+(hackui) C:\Development\hack2\open-webui\backend>
+(hackui) C:\Development\hack2\open-webui\backend>start_windows.bat
