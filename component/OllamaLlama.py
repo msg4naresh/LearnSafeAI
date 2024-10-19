@@ -1,5 +1,6 @@
 import json
 import httpx
+import re
 
 OLLAMA_API_BASE = "http://localhost:11434"
 DEFAULT_MODEL = "llama3.1:latest"
@@ -23,4 +24,12 @@ class OllamaLlama:
         try:
             return json.loads(response)
         except json.JSONDecodeError:
-            return None
+            # Try to find a JSON object in the string
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                try:
+                    return json.loads(json_match.group())
+                except json.JSONDecodeError:
+                    pass
+            # If no valid JSON found, return the original response
+            return response

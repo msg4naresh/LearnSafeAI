@@ -112,7 +112,11 @@ def main(questions: List[str]) -> None:
         logger.info(f"Categorized and rated groups: {categorized_and_rated_groups}")
         
         recommended_concepts = analyzer.recommend_concepts(categorized_and_rated_groups)
-        logger.info(f"Recommended concepts: {recommended_concepts}")
+        for group, concepts in recommended_concepts.items():
+            logger.info(f"Group {group}:")
+            for concept in concepts:
+                logger.info(f"Recommended concept: {concept}")
+        
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
 
