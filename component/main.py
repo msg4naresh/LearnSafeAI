@@ -5,7 +5,11 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from sklearn.cluster import AgglomerativeClustering
 from sentence_transformers import SentenceTransformer
 import json
+import os
 from questions_extractor import extract_user_questions
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models.sqlalchemy.question_analyzer import QuestionAnalysis, Base
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -23,10 +27,9 @@ def retry_with_exponential_backoff(max_retries: int = 3, base_wait: float = 1):
     )
 
 class QuestionAnalyzer:
-    def __init__(self, adapter: OllamaLlama):
+    def __init__(self, adapter: OllamaLlama, db_session):
         self.adapter = adapter
-
-
+        self.db_session = db_session
 
     @retry_with_exponential_backoff()
     def analyze_questions_and_recommend_concepts(self, question_group: List[str]) -> Dict[str, Any]:
@@ -62,6 +65,17 @@ class QuestionAnalyzer:
         """
         return self.adapter.parse_json_response(self.adapter.chat(prompt))
 
+    def store_analysis(self, question: str, analysis: Dict[str, Any]):
+        question_analysis = QuestionAnalysis(
+            question_text=question,
+            category=analysis['category'],
+            expertise_rating=analysis['expertise_level'],
+            knowledge_gaps=analysis['knowledge_gaps'],
+            recommendations=analysis['recommendations']
+        )
+        self.db_session.add(question_analysis)
+        self.db_session.commit()
+
 class QuestionGrouper:
     def __init__(self, model_name='all-MiniLM-L6-v2', threshold=0.7):
         self.model = SentenceTransformer(model_name)
@@ -92,9 +106,26 @@ class QuestionGrouper:
         
         return grouped_questions
 
+
+def get_database_uri():
+    host = os.environ.get("PG_HOST", "localhost")
+    port = os.environ.get("PG_PORT", "5433")
+    username = os.environ.get("PG_USERNAME", "postgres")
+    password = os.environ.get("PG_PASSWORD", "postgres")
+    database_name = os.environ.get("PG_DB", "learnsafeai")
+    database_schema = os.environ.get("PG_SCHEMA", "public")
+    return f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{database_name}?options=-csearch_path%3D{database_schema}"
+
+
 def main(questions: List[str]) -> None:
+    # Database setup
+    engine = create_engine(get_database_uri())
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    db_session = Session()
+
     adapter = OllamaLlama()
-    analyzer = QuestionAnalyzer(adapter)
+    analyzer = QuestionAnalyzer(adapter, db_session)
     grouper = QuestionGrouper()
     
     try:
@@ -111,10 +142,17 @@ def main(questions: List[str]) -> None:
             print("\nRecommendations:")
             recommended_concepts = analyzer.analyze_questions_and_recommend_concepts(questions)
             print(json.dumps(recommended_concepts, indent=2))
+            
+            # Store each question's analysis in the database
+            for question in questions:
+                analyzer.store_analysis(question, recommended_concepts)
+            
             print(f"{'='*50}\n")
         
     except Exception as e:
         print(f"\nError: An error occurred: {str(e)}")
+    finally:
+        db_session.close()
 
 if __name__ == "__main__":
     json_file = 'component/data/conversations.json'
